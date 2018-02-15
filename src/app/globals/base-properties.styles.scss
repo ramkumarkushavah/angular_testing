@@ -1,0 +1,50 @@
+﻿
+/* Background Colors */
+$bg-color-primary: #23437A;
+$bg-color-secondary: #3262A7;
+$bg-color-tertiary: #17324D;
+$bg-color-transparent: #FFFFFF;
+
+
+/* Font Styling*/
+$common-text-color: white;
+$common-font-size: 1vw;
+$font-family-primary: Myriad pro;
+$common-text-align: center;
+$common-zindex-size: 5;
+$common-position: absolute;
+$common-cursor: pointer;
+$common-opacity:1;
+$common-overflow:scroll;
+$common-overflow-x:hidden;
+$common-overflow-y:scroll;
+$common-float-right:right;
+$common-display:inline-block;
+$common-visibility:visible;
+$common-float-left:left;
+$common-border-bottom:groove;
+/* LeftPane Button Background Color */
+$pane-button-background-color: #17324D;
+$pane-button-margin-top: 0.5vw;
+$pane-button-border-radius: 1vw;
+$pane-button-zindex: 10;
+$pane-button-padding: 0px 1vw;
+
+
+/* Header Buttons Styling */
+$img_header_button_height: 2.5vw;
+$img_header_button_width: 3vw;
+$img_header_button_marginleft: 0.5vw;
+$img_header_button_margintop: 0.8vw;
+$img_header_button_outline: 0;
+
+/*  Header Button ToolTips Css  */
+$common_tooltip_zindex: 999;
+$common_tooltip_top: 3.9vw;
+$common_tooltip_bgcolor: #194982;
+$common_tooltip_padding: 0.4vw;
+$common_tooltip_fontsize: 1.2vw;
+
+/* Search Bar CSS*/
+$filter-border-radius:1vw;
+$filter-border:0.05vw solid rgba(255,255,255,0.5);

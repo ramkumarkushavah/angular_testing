@@ -1,0 +1,14 @@
+﻿<div style="width: 200px; margin-bottom: 20px;">
+
+    <ng-select [allowClear]="true"
+               [items]="NameList"
+               [disabled]="disabled"
+               (data)="refreshValue($event)"
+               (selected)="selected($event)"
+               (removed)="removed($event)"
+               (typed)="typed($event)"
+               placeholder="No Parent selected">
+    </ng-select>
+
+
+</div>

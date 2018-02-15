@@ -1,0 +1,321 @@
+﻿/// <reference path='../../../../../node_modules/@types/openlayers/index.d.ts' />
+import { Component, HostListener, AfterViewInit, OnInit } from '@angular/core';
+
+// AoT compilation doesn't support 'require'.
+import { AspectRatioUtil } from '../../../../app/globals/Model/AspectRatioUtil';
+import { CommonService } from '../../../globals/CommonService';
+
+import { AssetsService } from '../services/AssetsFabricService';
+
+//import * as ol from 'openlayers';
+declare let $: any;
+@Component({
+    selector: 'assetsfabric',
+    templateUrl: 'assetsfabric.component.html',
+    styleUrls: ['./assetsfabric.component.styles.scss']
+})
+
+export class AssetsFabricComponent {
+
+    json;
+    checkWidth = false;
+    private optionss: Array<any>;
+    private map: ol.Map;
+    private OSM: ol.layer.Tile;
+    private MapBox_1: ol.layer.Tile;
+    private MapBox_2: ol.layer.Tile;
+
+    private layerId: any;
+    private baseLayerArray: Array<any>;
+    private entityLayerArray: Array<any>;
+
+
+    constructor( public commonService: CommonService, public mapService: AssetsService) {
+        this.commonService.getDynamicImage.next('../../../../images/Assets.svg');
+
+        commonService.checkTreeStatus.subscribe(res => {
+            this.checkWidth = true;
+            this.getCSSJSONData();
+        });
+        mapService.getZoomMessage().subscribe(message => {
+            this.map.setView(new ol.View({
+                center: ol.proj.fromLonLat([37.41, 8.82]),
+
+                zoom: message
+            }));
+        });
+
+        //osm
+        mapService.getMessage().subscribe(r => {
+            this.baseLayerArray.forEach(l => {
+                let existingLayer;
+                if (l.name == r.text) {
+                    this.map.getLayers().forEach(a => {
+                        existingLayer = a.get('base');
+                        if (existingLayer == 'mapb1' || 'mapb2' || 'osm') {
+                            this.map.removeLayer(a);
+                            this.map.addLayer(l.layer);
+                        }
+                    });
+                   }
+            });
+
+          });
+    }
+
+
+
+
+    ngOnInit() {
+        this.getCSSJSONData();
+        this.commonService.ActivateTree.next("AssetsFabricJson");
+    }
+    @HostListener('window:resize')
+    onResize() {
+        let self = this;
+        this.getCSSJSONData();
+    }
+    getCSSJSONData() {
+        let self = this;
+        this.commonService.GetCSSJSONData().subscribe(json => {
+            this.json = json;
+            this.generateCSS();
+        });
+    }
+
+    generateCSS() {
+        try {
+            let deviceWidth = (window.innerWidth > 0) ? window.innerWidth : screen.width;
+            let currentWidthRatio = AspectRatioUtil.WidthRatio((this.json['UIBackground'])['width'], deviceWidth);
+            let currentComponentWidth = null;
+            let currentComponentHeight = null;
+            let currentComponentLeft = null;
+            let currentComponentTop = null;
+            if (this.commonService.checkTreeActive && this.commonService.checkStatus) {
+                currentComponentWidth = AspectRatioUtil.ComponentWidth(currentWidthRatio, (this.json['AssetsFabricDrawingArea'])['width']);
+                currentComponentLeft = AspectRatioUtil.ComponentLeft(currentWidthRatio, (this.json['AssetsFabricDrawingArea'])['left']);
+                currentComponentTop = AspectRatioUtil.ComponentTop(currentComponentLeft, (this.json['AssetsFabricDrawingArea'])['top'] / (this.json['AssetsFabricDrawingArea'])['left']);
+            } else {
+                currentComponentWidth = AspectRatioUtil.ComponentWidth(currentWidthRatio, (this.json['DrawingArea'])['width']);
+                currentComponentLeft = AspectRatioUtil.ComponentLeft(currentWidthRatio, (this.json['DrawingArea'])['left']);
+                currentComponentTop = AspectRatioUtil.ComponentTop(currentComponentLeft, (this.json['DrawingArea'])['top'] / (this.json['DrawingArea'])['left']);
+            }
+            currentComponentHeight = window.innerHeight - (document.getElementById('Header').clientHeight);
+
+            $('#AssetsFabricDrawingArea').css({
+                'height': currentComponentHeight,
+                'width': currentComponentWidth,
+                'left': currentComponentLeft,
+                'top': currentComponentTop
+            });
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+
+    ngAfterViewInit() {
+        this.optionss = [
+            { name: 'OSM', icon: 'location arrow' },
+            { name: 'MapBox_1', icon: 'location arrow' },
+            { name: 'MapBox_2', icon: 'location arrow' }
+        ];
+
+        this.createMap();
+
+    }
+
+
+    createMap() {
+        this.OSM = new ol.layer.Tile({
+            source: new ol.source.OSM({
+            }),
+            // minResolution: 200, // maxResolution: 2000,
+        });
+        this.OSM.set('base', 'osm');
+
+        this.MapBox_1 = new ol.layer.Tile({
+            source: new ol.source.TileJSON({
+                url: 'https://api.tiles.mapbox.com/v3/mapbox.geography-class.json',
+                crossOrigin: ''
+            })
+        });
+        this.MapBox_2 = new ol.layer.Tile({
+            source: new ol.source.TileJSON({
+
+                url: 'https://api.tiles.mapbox.com/v3/mapbox.natural-earth-hypso-bathy.json?secure',
+                crossOrigin: 'anonymous'
+            }),
+            // minResolution: 2000,
+            // maxResolution: 10000
+        });
+
+        // let layers = [OSMmap,mapbox ,australiaLay];
+        let layers = [this.OSM];
+        let overviewMapControl = new ol.control.OverviewMap({
+            // see in overviewmap-custom.html to see the custom CSS used
+            // className: 'ol-overviewmap ol-custom-overviewmap',
+            layers: [
+                new ol.layer.Tile({
+                    source: new ol.source.OSM()
+                })
+            ],
+            collapseLabel: '\u00BB',
+            label: '\u00AB',
+            collapsed: false
+        });
+
+
+
+
+        //Initial Map creation at id=AssetsFabricDrawingArea
+        this.map = new ol.Map({
+            controls: ol.control.defaults({ zoom: false }).extend([
+                new ol.control.FullScreen(),
+                overviewMapControl,
+                new ol.control.MousePosition()
+            ]),
+            layers: layers,
+            target: 'AssetsFabricDrawingArea',
+            view: new ol.View({
+                center: ol.proj.fromLonLat([-114.80713, 56.93994]),
+                zoom: 4,
+                minZoom: 2
+            })
+        });
+
+        ///
+
+
+
+
+
+        //layers from geoserver\\
+        let GSpoint = new ol.source.TileWMS({
+            url: 'http://192.168.1.211:8080/geoserver/cite/wms',
+            params: { 'LAYERS': 'cite:ObjectGeoJson', 'TILED': true },
+            projection: 'EPSG:4326'
+        });
+
+        let pipeline = new ol.source.TileWMS({
+            url: 'http://192.168.1.211:8080/geoserver/cite/wms',
+            params: { 'LAYERS': 'cite:POLYLINE', 'TILED': true },
+            projection: 'EPSG:4326'
+        });
+
+        let sourceareas = new ol.source.TileWMS({
+            url: 'http://192.168.1.211:8080/geoserver/cite/wms',
+            params: { 'LAYERS': 'cite:POLYGON', 'TILED': true },
+            projection: 'EPSG:4326',
+        });
+
+        let oilGasLayer = new ol.layer.Tile({
+            source: GSpoint
+        });
+        oilGasLayer.set('objects', 'objects');
+
+        let pipelineLayer = new ol.layer.Tile({
+            source: pipeline
+        });
+        pipelineLayer.set('pipeline', 'pipeline');
+
+        let AreasLayer = new ol.layer.Tile({
+            source: sourceareas
+        });
+        AreasLayer.set('areas', 'areas');
+
+        //Tiles for map
+        let mapb1Layer = new ol.layer.Tile({
+            source: new ol.source.TileJSON({
+                url: 'https://api.tiles.mapbox.com/v3/mapbox.geography-class.json',
+                crossOrigin: ''
+            })
+        });
+
+        mapb1Layer.set('base', 'mapb1');
+
+        let mapb2Layer = new ol.layer.Tile({
+            source: new ol.source.TileJSON({
+
+                url: 'https://api.tiles.mapbox.com/v3/mapbox.natural-earth-hypso-bathy.json?secure',
+                crossOrigin: 'anonymous'
+            }),
+            // minResolution: 2000,
+
+            // maxResolution: 10000
+        });
+        mapb2Layer.set('base', 'mapb2');
+        this.baseLayerArray = [
+            { name: 'osm', layer: layers },//this.OSM },
+            { name: 'mapb1', layer: mapb1Layer },
+            { name: 'mapb2', layer: mapb2Layer }
+        ];
+
+        this.entityLayerArray = [
+            { name: 'areas', layer: AreasLayer },
+            { name: 'pipeline', layer: pipelineLayer },
+            { name: 'objects', layer: oilGasLayer }
+        ];
+
+        let self = this;
+
+        //$('#btnarea').click(function (x) {
+        //    let ckbox = $('#btnarea')
+        //    if (ckbox.is(':checked')) {
+        //        self.map.addLayer(AreasLayer)
+        //    } else {
+        //        self.map.removeLayer(AreasLayer)
+        //    }
+        //});
+
+        //$('#btnpip').click(function (x) {
+        //    let ckbox = $('#btnpip')
+        //    if (ckbox.is(':checked')) {
+        //        self.map.addLayer(pipelineLayer)
+        //    } else {
+        //        self.map.removeLayer(pipelineLayer)
+        //    }
+        //});
+        //$('#btnobj').click(function (x) {
+        //    let ckbox = $('#btnobj')
+        //    if (ckbox.is(':checked')) {
+        //        self.map.addLayer(oilGasLayer)
+        //    } else {
+        //        self.map.removeLayer(oilGasLayer)
+        //    }
+        //});
+
+
+
+        //$('#l1').click(function (x) {
+        //    let ckbox = $('#l1')
+        //    if (ckbox.is(':checked')) {
+        //        self.map.addLayer(self.OSM)
+        //    } else {
+        //        self.map.removeLayer(self.OSM)
+        //    }
+        //});
+
+        //$('#l2').click(function (x) {
+        //    let ckbox = $('#l2')
+        //    if (ckbox.is(':checked')) {
+        //        self.map.addLayer(rasterLayer)
+        //    } else {
+        //        self.map.removeLayer(rasterLayer)
+        //    }
+        //});
+        //$('#l3').click(function (x) {
+        //    let ckbox = $('#l3')
+        //    if (ckbox.is(':checked')) {
+        //        self.map.addLayer(mapbox)
+        //    } else {
+        //        self.map.removeLayer(mapbox)
+        //    }
+        //});
+
+
+
+
+
+    }
+}

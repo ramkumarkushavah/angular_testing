@@ -1,0 +1,12 @@
+﻿<div style="width: 250px; margin-bottom: 20px;">
+
+    <ng-select [multiple]="true"
+               [items]="NameList"
+               [disabled]="disabled"
+               (data)="refreshValue($event)"
+               (selected)="selected($event)"
+               (removed)="removed($event)"
+               placeholder="placeholder"></ng-select>
+    <!--<pre>{{itemsToString(value)}}</pre>-->
+
+</div>
